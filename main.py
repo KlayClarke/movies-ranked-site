@@ -45,13 +45,9 @@ db.create_all()
 
 
 class EditForm(FlaskForm):
-    movie_title = StringField(label='Title', validators=[DataRequired()])
-    movie_year = IntegerField(label='Year', validators=[DataRequired()])
-    movie_description = StringField(label='Description', validators=[DataRequired()])
-    movie_rating = FloatField(label='Rating', validators=[DataRequired()])
-    movie_ranking = IntegerField(label='Ranking', validators=[DataRequired()])
-    movie_review = StringField(label='Review', validators=[DataRequired()])
-    movie_img_url = StringField(label='img_url', validators=[DataRequired()])
+    movie_rating = FloatField(label='Your Rating Out Of 10 (e.g, 6.3)', validators=[DataRequired()])
+    movie_review = StringField(label='Your Review', validators=[DataRequired()])
+    submit = SubmitField(label='Submit')
 
 
 @app.route("/")
@@ -69,7 +65,10 @@ def edit(movie_id):
         form.validate_on_submit()
         return render_template('edit.html', form=form, movie=movie)
     elif request.method == 'POST' and form.validate_on_submit():
-        pass
+        movie.rating = form.movie_rating.data
+        movie.review = form.movie_review.data
+        db.session.commit()
+        return redirect(url_for('home'))
 
 
 if __name__ == '__main__':
