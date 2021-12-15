@@ -52,8 +52,6 @@ def home():
     for movie in all_movies_ordered:
         ranking += 1
         rankings.append(ranking)
-    # rank / display rank of movies based on rating - has to be an easier way to do this, but I tried and I am proud
-    for movie in all_movies_ordered:
         movie.ranking = rankings.pop(-1)
     return render_template("index.html", all_movies=all_movies_ordered)
 
