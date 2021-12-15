@@ -45,11 +45,12 @@ class EditForm(FlaskForm):
 
 @app.route("/")
 def home():
-    # retrieve all movies
-    all_movies = db.session.query(Movie).all()
-    return render_template("index.html", all_movies=all_movies)
+    # retrieve all movies and order them based on rating (ascending)
+    all_movies_ordered = db.session.query(Movie).order_by(Movie.rating.asc())
+    return render_template("index.html", all_movies=all_movies_ordered)
 
 
+# probably can redirect to edit route and pass in param of movie... TRY
 @app.route('/add/<movie_id>', methods=['GET', 'POST'])
 def add(movie_id):
     form = EditForm()
