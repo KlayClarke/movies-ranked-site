@@ -8,7 +8,6 @@ from wtforms import StringField, SubmitField, IntegerField, FloatField
 from flask import Flask, render_template, redirect, url_for, request
 
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY')
-TMDB_ENDPOINT = 'https://api.themoviedb.org/search/movie'
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
@@ -24,9 +23,9 @@ class Movie(db.Model):
     title = db.Column(db.String(250), unique=True)
     year = db.Column(db.Integer)
     description = db.Column(db.String(250))
-    rating = db.Column(db.Float)
-    ranking = db.Column(db.Integer)
-    review = db.Column(db.String(250))
+    rating = db.Column(db.Float, nullable=True)
+    ranking = db.Column(db.Integer, nullable=True)
+    review = db.Column(db.String(250), nullable=True)
     img_url = db.Column(db.String(250))
 
 
@@ -35,12 +34,6 @@ db.create_all()
 
 class AddForm(FlaskForm):
     movie_title = StringField(label='Movie Title', validators=[DataRequired()])
-    # movie_year = IntegerField(label='Movie Year', validators=[DataRequired()])
-    # movie_description = StringField(label='Movie Description', validators=[DataRequired()])
-    # movie_rating = FloatField(label='Movie Rating', validators=[DataRequired()])
-    # movie_ranking = IntegerField(label='Movie Ranking', validators=[DataRequired()])
-    # movie_review = StringField(label='Movie Review', validators=[DataRequired()])
-    # movie_img_url = StringField(label='Movie IMG URL', validators=[DataRequired()])
     submit = SubmitField(label='Submit')
 
 
@@ -57,8 +50,25 @@ def home():
     return render_template("index.html", all_movies=all_movies)
 
 
-@app.route('/add', methods=['GET', 'POST'])
-def add():
+@app.route('/add/<movie_id>', methods=['GET', 'POST'])
+def add(movie_id):
+    tmdb_url = f'https://api.themoviedb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US'
+    response = requests.get(url=tmdb_url)
+    data = response.json()
+    print(data)
+    movie_title = data['original_title']
+    movie_img_url = f'https://image.tmdb.org/t/p/w500{data["poster_path"]}'
+    movie_year = int(data['release_date'][0:4])
+    movie_description = data['overview']
+    new_movie = Movie(title=movie_title, year=movie_year, description=movie_description,
+                      rating=0, ranking=0, review='None', img_url=movie_img_url)
+    db.session.add(new_movie)
+    db.session.commit()
+    return redirect(url_for('home'))
+
+
+@app.route('/search', methods=['GET', 'POST'])
+def search():
     form = AddForm()
     if request.method == 'GET':
         form.validate_on_submit()
@@ -69,14 +79,6 @@ def add():
 
         response = requests.get(url=tmdb_url)
         data = response.json()['results']
-        # movie_info = data['results'][0]
-        # movie_title = movie_info['original_title']
-        # movie_year = int(movie_info['release_data'][0:4])
-        # movie_description = movie_info['overview']
-        # movie_rating =
-        # new_movie = Movie(title=form.movie_title.data, year=)
-        # db.session.add(new_movie)
-        # db.session.commit()
         return render_template('select.html', movies=data)
 
 
