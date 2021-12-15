@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from wtforms.validators import DataRequired
-from wtforms import StringField, SubmitField, IntegerField, FloatField
+from wtforms import StringField, SubmitField, FloatField
 from flask import Flask, render_template, redirect, url_for, request
 
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY')
@@ -23,16 +23,16 @@ class Movie(db.Model):
     title = db.Column(db.String(250), unique=True)
     year = db.Column(db.Integer)
     description = db.Column(db.String(250))
-    rating = db.Column(db.Float, nullable=True)
-    ranking = db.Column(db.Integer, nullable=True)
-    review = db.Column(db.String(250), nullable=True)
+    rating = db.Column(db.Float)
+    ranking = db.Column(db.Integer)
+    review = db.Column(db.String(250))
     img_url = db.Column(db.String(250))
 
 
 db.create_all()
 
 
-class AddForm(FlaskForm):
+class SearchForm(FlaskForm):
     movie_title = StringField(label='Movie Title', validators=[DataRequired()])
     submit = SubmitField(label='Submit')
 
@@ -52,24 +52,30 @@ def home():
 
 @app.route('/add/<movie_id>', methods=['GET', 'POST'])
 def add(movie_id):
-    tmdb_url = f'https://api.themoviedb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US'
-    response = requests.get(url=tmdb_url)
-    data = response.json()
-    print(data)
-    movie_title = data['original_title']
-    movie_img_url = f'https://image.tmdb.org/t/p/w500{data["poster_path"]}'
-    movie_year = int(data['release_date'][0:4])
-    movie_description = data['overview']
-    new_movie = Movie(title=movie_title, year=movie_year, description=movie_description,
-                      rating=0, ranking=0, review='None', img_url=movie_img_url)
-    db.session.add(new_movie)
-    db.session.commit()
-    return redirect(url_for('home'))
+    form = EditForm()
+    movie = Movie.query.get(movie_id)
+    if request.method == 'GET':
+        form.validate_on_submit()
+        return render_template('edit.html', movie_id=movie_id, movie=movie, form=form)
+    elif request.method == 'POST' and form.validate_on_submit():
+        tmdb_url = f'https://api.themoviedb.org/3/movie/{movie_id}?api_key={TMDB_API_KEY}&language=en-US'
+        response = requests.get(url=tmdb_url)
+        data = response.json()
+        print(data)
+        movie_title = data['original_title']
+        movie_img_url = f'https://image.tmdb.org/t/p/w500{data["poster_path"]}'
+        movie_year = int(data['release_date'][0:4])
+        movie_description = data['overview']
+        new_movie = Movie(title=movie_title, year=movie_year, description=movie_description,
+                          rating=form.movie_rating.data, review=form.movie_review.data, img_url=movie_img_url)
+        db.session.add(new_movie)
+        db.session.commit()
+        return redirect(url_for('home'))
 
 
 @app.route('/search', methods=['GET', 'POST'])
 def search():
-    form = AddForm()
+    form = SearchForm()
     if request.method == 'GET':
         form.validate_on_submit()
         return render_template('add.html', form=form)
