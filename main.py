@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from wtforms.validators import DataRequired
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SubmitField, IntegerField, FloatField
 from flask import Flask, render_template, redirect, url_for, request
 
 app = Flask(__name__)
@@ -31,20 +31,27 @@ db.create_all()
 
 
 # new_movie = Movie(
-#     title='Phone Booth',
-#     year=2002,
-#     description='Publicist Stuart Shepard finds himself trapped in a phone booth, '
-#                 'pinned down by an extortionist\'s sniper rifle. '
-#                 'Unable to leave or receive outside help, '
-#                 'Stuart\'s negotiation with the caller leads to a jaw-dropping climax',
-#     rating=7.3,
-#     ranking=10,
-#     review='My favourite character was the caller.',
-#     img_url='https://image.tmdb.org/t/p/w500/tjrX2oWRCM3Tvarz38zlZM7Uc10.jpg'
+#     title='',
+#     year=,
+#     description=''
+#     rating=0,
+#     ranking=0,
+#     review='',
+#     img_url=''
 # )
 #
 # db.session.add(new_movie)
 # db.session.commit()
+
+
+class EditForm(FlaskForm):
+    movie_title = StringField(label='Title', validators=[DataRequired()])
+    movie_year = IntegerField(label='Year', validators=[DataRequired()])
+    movie_description = StringField(label='Description', validators=[DataRequired()])
+    movie_rating = FloatField(label='Rating', validators=[DataRequired()])
+    movie_ranking = IntegerField(label='Ranking', validators=[DataRequired()])
+    movie_review = StringField(label='Review', validators=[DataRequired()])
+    movie_img_url = StringField(label='img_url', validators=[DataRequired()])
 
 
 @app.route("/")
@@ -52,6 +59,17 @@ def home():
     # retrieve all movies
     all_movies = db.session.query(Movie).all()
     return render_template("index.html", all_movies=all_movies)
+
+
+@app.route('/edit/<movie_id>', methods=['GET', 'POST'])
+def edit(movie_id):
+    form = EditForm()
+    movie = Movie.query.get(movie_id)
+    if request.method == 'GET':
+        form.validate_on_submit()
+        return render_template('edit.html', form=form, movie=movie)
+    elif request.method == 'POST' and form.validate_on_submit():
+        pass
 
 
 if __name__ == '__main__':
